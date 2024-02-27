@@ -1,87 +1,121 @@
 local composer = require("composer")
+local C = require('Constants')
 
 local scene = composer.newScene()
 local isAudioPlaying = false
 local buttonPlay
 local sound
-local shakeThreshold = 1.5  -- Ajuste conforme necessário
 local redPoint
-local predioImage  -- Nova imagem para shakePNG
+local predioImage
+local isShakeDetected = false
 
--- Função para manipular o toque no botão de áudio
+local shakeThreshold = 1.5  -- Ajuste conforme necessário
+
 local function onTouch(event)
     if event.phase == "ended" then
         if isAudioPlaying then
             isAudioPlaying = false
-            buttonPlay:removeSelf()
-            buttonPlay = display.newImageRect(scene.view, "assets/audio.png", 140, 140)
             audio.stop()
             audio.dispose(sound)
         else
             isAudioPlaying = true
-            buttonPlay:removeSelf()
-            buttonPlay = display.newImageRect(scene.view, "assets/audio.png", 301, 167)
             sound = audio.loadSound("7audio.mp3")
             audio.play(sound, { onComplete = function() isAudioPlaying = false end })
         end
-        buttonPlay.x = display.contentWidth - 150
-        buttonPlay.y = 200
-        buttonPlay:addEventListener("touch", onTouch)
+
+        buttonPlay:removeEventListener("touch", onTouch)
+        timer.performWithDelay(300, function()
+            buttonPlay:addEventListener("touch", onTouch)
+        end)
     end
 end
 
--- Função para atualizar a posição do ponto vermelho com base na velocidade
-local function updateRedPoint(velocity)
-    local pointValue = math.min(math.abs(velocity) * 2, 10)  -- Ajuste conforme necessário
-    redPoint.text = tostring(math.ceil(pointValue))
+local function onShake(event)
+    if event.isShake and not isShakeDetected then
+        isShakeDetected = true
+        predioImage:play()
+    end
 end
 
--- Função para atualizar a posição do PNG chacoalhante
-local function shakePNG()
-    transition.to(predioImage, {time = 100, x = predioImage.x + math.random(-5, 5), y = predioImage.y + math.random(-5, 5), onComplete = shakePNG})
+
+local function moveRedPoint(event)
+    if event.isShake and not isShakeDetected then
+        local minY = 178  -- Valor mínimo no eixo Y
+        local maxY = display.contentHeight - 200
+        local randomY = math.random(minY, maxY)
+        transition.to(redPoint, { y = randomY, time = 500, transition = easing.outQuad })
+    end
 end
 
--- Função para criar a cena
+local sheetOptions =
+{
+    width = 166, 
+    height = 250,  
+    numFrames = 6  
+}
+
+local sheetPredio = graphics.newImageSheet("assets/predio.png", sheetOptions)  -- Substitua o caminho pela sua spritesheet
+
+local sequencesPredio = {
+    {
+        name = "move",
+        start = 1,
+        count = 6,
+        time = 0,
+        loopCount = 10,  -- Defina para 1 para reprodução única
+        loopDirection = "forward"
+    }
+}
+
 function scene:create(event)
     local sceneGroup = self.view
 
-    -- Background (mesmo código)
+    local backgroundImage = display.newImageRect(sceneGroup, "assets/Página6.png", display.contentWidth, display.contentHeight)
+    backgroundImage.x = display.contentCenterX
+    backgroundImage.y = display.contentCenterY
 
-    -- Setas (mesmo código)
+    local btNext = display.newImageRect(sceneGroup, "assets/seta.png", 64, 64)
+    btNext.x, btNext.y, btNext.rotation = display.contentWidth - 60, display.contentHeight - 78, 90
+    btNext:addEventListener('tap', function() composer.gotoScene("page8", {effect = "fromRight", time = 1000}) end)
 
-    -- Adicionando o botão de áudio
-    buttonPlay = display.newImageRect(sceneGroup, "assets/audio.png", 140, 140)
-    buttonPlay.x = display.contentWidth - 150
-    buttonPlay.y = 200
+    local btPreview = display.newImageRect(sceneGroup, "assets/seta.png", 64, 64)
+    btPreview.x, btPreview.y, btPreview.rotation = display.contentWidth - 710, display.contentHeight - 78, 270
+    btPreview:addEventListener('tap', function() composer.gotoScene("page1", {effect = "fromLeft", time = 1000}) end)
+
+    buttonPlay = display.newImageRect(sceneGroup, "assets/audio.png", 75, 75)
+    buttonPlay.x, buttonPlay.y = display.contentWidth - 50, 400
     buttonPlay:addEventListener("touch", onTouch)
 
-    -- Adicionando o ponto vermelho
-    redPoint = display.newText(sceneGroup, "0", display.contentWidth - 50, 50, native.systemFontBold, 24)
+    redPoint = display.newCircle(sceneGroup, display.contentWidth - 590, 930, 15)
     redPoint:setFillColor(1, 0, 0)
+    redPoint:addEventListener("movement",  function(event)
+        if event.phase == "ended" then
+            isShakeDetected = false
+        end
+    end)    
 
-    -- Adicionando a nova imagem para shakePNG
-    predioImage = display.newImageRect(sceneGroup, "assets/predio.png", largura, altura) -- Substitua largura e altura pelos valores desejados
-    predioImage.x = display.contentCenterX
-    predioImage.y = display.contentCenterY
+    predioImage = display.newSprite( sheetPredio, sequencesPredio )
+    predioImage.x, predioImage.y = display.contentCenterX, display.contentCenterY + 100
+    sceneGroup:insert(predioImage)  -- Adiciona o sprite ao grupo da cena
+    predioImage:addEventListener("sprite", function(event)
+        if event.phase == "ended" then
+            isShakeDetected = false
+        end
+    end)
 end
 
--- Função para mostrar a cena
 function scene:show(event)
     if event.phase == "did" then
-        -- Iniciar o acelerômetro
-        Runtime:addEventListener("accelerometer", onAccelerate)
+        Runtime:addEventListener("accelerometer", onShake)
     end
 end
 
--- Função para ocultar a cena
 function scene:hide(event)
     if event.phase == "did" then
-        -- Parar o acelerômetro
-        Runtime:removeEventListener("accelerometer", onAccelerate)
+        Runtime:removeEventListener("accelerometer", onShake)
     end
 end
 
--- Função para destruir a cena
 function scene:destroy(event)
     if sound then
         audio.dispose(sound)
@@ -89,7 +123,6 @@ function scene:destroy(event)
     end
 end
 
--- Adicionando os ouvintes de eventos da cena
 scene:addEventListener("create", scene)
 scene:addEventListener("show", scene)
 scene:addEventListener("hide", scene)
