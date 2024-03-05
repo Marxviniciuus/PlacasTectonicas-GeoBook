@@ -3,20 +3,30 @@ local composer = require("composer")
 
 local scene = composer.newScene();
 
+local isAudioPlaying = false
+local buttonPlay
+local sound
 
--- -----------------------------------------------------------------------------------
--- Code outside of the scene event functions below will only be executed ONCE unless
--- the scene is removed entirely (not recycled) via "composer.removeScene()"
--- -----------------------------------------------------------------------------------
- 
- 
- 
- 
--- -----------------------------------------------------------------------------------
--- Scene event functions
--- -----------------------------------------------------------------------------------
- 
--- create()
+
+local function onTouch(event)
+  if event.phase == "ended" then
+      if isAudioPlaying then
+          isAudioPlaying = false
+          audio.stop()
+          audio.dispose(sound)
+      else
+          isAudioPlaying = true
+          sound = audio.loadSound("assets/audio/8audio.mp3")
+          audio.play(sound, { onComplete = function() isAudioPlaying = false end })
+      end
+
+      buttonPlay:removeEventListener("touch", onTouch)
+      timer.performWithDelay(300, function()
+          buttonPlay:addEventListener("touch", onTouch)
+      end)
+  end
+end
+
 function scene:create( event )
  
   local sceneGroup = self.view
@@ -34,6 +44,10 @@ function scene:create( event )
   btNext.x = display.contentWidth - 710  -- Metade da largura da seta
   btNext.y = display.contentHeight - 70
   btNext.rotation = 270
+
+  buttonPlay = display.newImageRect(sceneGroup, "assets/audio.png", 75, 75)
+  buttonPlay.x, buttonPlay.y = display.contentWidth - 384, 930
+  buttonPlay:addEventListener("touch", onTouch)
 
   function btNext.handle(event)
     composer.gotoScene("page7", {effect = "fromLeft", time = 1000})

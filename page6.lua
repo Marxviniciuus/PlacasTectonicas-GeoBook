@@ -5,11 +5,11 @@ local scene = composer.newScene()
 local isAudioPlaying = false
 local buttonPlay
 local sound
-local redPoint
-local predioImage
-local isShakeDetected = false
-
-local shakeThreshold = 1.5  -- Ajuste conforme necessário
+local vulcanImage
+local touchArea -- Novo: retângulo invisível para detectar o toque
+local isRubbing = false -- Nova: variável para indicar esfregamento
+local touchStartTime = 0  -- Variável para registrar o tempo inicial do toque
+local rubCount = 0
 
 local function onTouch(event)
     if event.phase == "ended" then
@@ -19,7 +19,7 @@ local function onTouch(event)
             audio.dispose(sound)
         else
             isAudioPlaying = true
-            sound = audio.loadSound("7audio.mp3")
+            sound = audio.loadSound("assets/audio/6audio.mp3")
             audio.play(sound, { onComplete = function() isAudioPlaying = false end })
         end
 
@@ -30,39 +30,44 @@ local function onTouch(event)
     end
 end
 
-local function onShake(event)
-    if event.isShake and not isShakeDetected then
-        isShakeDetected = true
-        predioImage:play()
-    end
-end
+local function onVulcanTouch(event)
+    if event.phase == "began" then
+        -- Se o dedo começou a tocar na área do vulcão
+        touchArea.isFocused = true
+        touchStartTime = system.getTimer()  -- Registra o tempo inicial do toque
+        isRubbing = false
+    elseif (event.phase == "ended" or event.phase == "cancelled") and touchArea.isFocused then
+        -- Se o dedo saiu da área do vulcão
+        touchArea.isFocused = false
+        isRubbing = false  -- Reseta a variável ao finalizar o toque
 
-
-local function moveRedPoint(event)
-    if event.isShake and not isShakeDetected then
-        local minY = 178  -- Valor mínimo no eixo Y
-        local maxY = display.contentHeight - 200
-        local randomY = math.random(minY, maxY)
-        transition.to(redPoint, { y = randomY, time = 500, transition = easing.outQuad })
+        -- Verifica se o toque persistiu por mais de 0.5 segundos
+        local touchDuration = system.getTimer() - touchStartTime
+        if touchDuration > 2000 then
+            vulcanImage:setSequence("move")
+            vulcanImage:play()
+        end
     end
+
+    return true  -- Indica que o evento foi manipulado
 end
 
 local sheetOptions =
 {
-    width = 166, 
+    width = 250, 
     height = 250,  
-    numFrames = 6  
+    numFrames = 4  
 }
 
-local sheetPredio = graphics.newImageSheet("assets/vulcao.png", sheetOptions)  -- Substitua o caminho pela sua spritesheet
+local sheetVulcan = graphics.newImageSheet("assets/vulcao.png", sheetOptions)
 
-local sequencesPredio = {
+local sequencesVulcan = {
     {
         name = "move",
         start = 1,
         count = 4,
-        time = 0,
-        loopCount = 10,  -- Defina para 1 para reprodução única
+        time = 100,
+        loopCount = 10,
         loopDirection = "forward"
     }
 }
@@ -74,46 +79,35 @@ function scene:create(event)
     backgroundImage.x = display.contentCenterX
     backgroundImage.y = display.contentCenterY
 
-    local btNext = display.newImageRect(sceneGroup, "assets/seta.png", 64, 64)
+    local btNext = display.newImageRect(sceneGroup, "assets/seta.png", 64, 60)
     btNext.x, btNext.y, btNext.rotation = display.contentWidth - 60, display.contentHeight - 78, 90
-    btNext:addEventListener('tap', function() composer.gotoScene("page8", {effect = "fromRight", time = 1000}) end)
+    btNext:addEventListener('tap', function() composer.gotoScene("page7", {effect = "fromRight", time = 1000}) end)
 
     local btPreview = display.newImageRect(sceneGroup, "assets/seta.png", 64, 64)
     btPreview.x, btPreview.y, btPreview.rotation = display.contentWidth - 710, display.contentHeight - 78, 270
-    btPreview:addEventListener('tap', function() composer.gotoScene("page1", {effect = "fromLeft", time = 1000}) end)
+    btPreview:addEventListener('tap', function() composer.gotoScene("page5", {effect = "fromLeft", time = 1000}) end)
 
     buttonPlay = display.newImageRect(sceneGroup, "assets/audio.png", 75, 75)
-    buttonPlay.x, buttonPlay.y = display.contentWidth - 50, 400
-    buttonPlay:addEventListener("touch", onTouch)
+    buttonPlay.x, buttonPlay.y = display.contentWidth - 384, 930
+    buttonPlay:addEventListener("touch", onTouch)  
 
-    redPoint = display.newCircle(sceneGroup, display.contentWidth - 590, 930, 15)
-    redPoint:setFillColor(1, 0, 0)
-    redPoint:addEventListener("movement",  function(event)
-        if event.phase == "ended" then
-            isShakeDetected = false
-        end
-    end)    
+    vulcanImage = display.newSprite(sheetVulcan, sequencesVulcan)
+    vulcanImage.x, vulcanImage.y = display.contentCenterX, display.contentCenterY + 100
+    sceneGroup:insert(vulcanImage)
 
-    predioImage = display.newSprite( sheetPredio, sequencesPredio )
-    predioImage.x, predioImage.y = display.contentCenterX, display.contentCenterY + 100
-    sceneGroup:insert(predioImage)  -- Adiciona o sprite ao grupo da cena
-    predioImage:addEventListener("sprite", function(event)
-        if event.phase == "ended" then
-            isShakeDetected = false
-        end
-    end)
+    -- Retângulo semi invisível para detectar o toque
+    touchArea = display.newRect(sceneGroup, 380, 620, 200, 200)
+    touchArea:setFillColor(1, 0, 0, 0,01)  -- Vermelho semi invisível
+    touchArea.isHitTestable = true
+    touchArea:addEventListener("touch", onVulcanTouch)
 end
 
 function scene:show(event)
-    if event.phase == "did" then
-        Runtime:addEventListener("accelerometer", onShake)
-    end
+    
 end
 
 function scene:hide(event)
-    if event.phase == "did" then
-        Runtime:removeEventListener("accelerometer", onShake)
-    end
+   
 end
 
 function scene:destroy(event)

@@ -2,25 +2,33 @@ local C = require('Constants')
 local composer = require("composer")
 
 local scene = composer.newScene();
+local isAudioPlaying = false
+local buttonPlay
+local sound
 
 
--- -----------------------------------------------------------------------------------
--- Code outside of the scene event functions below will only be executed ONCE unless
--- the scene is removed entirely (not recycled) via "composer.removeScene()"
--- -----------------------------------------------------------------------------------
- 
- 
- 
- 
--- -----------------------------------------------------------------------------------
--- Scene event functions
--- -----------------------------------------------------------------------------------
- 
--- create()
+local function onTouch(event)
+  if event.phase == "ended" then
+      if isAudioPlaying then
+          isAudioPlaying = false
+          audio.stop()
+          audio.dispose(sound)
+      else
+          isAudioPlaying = true
+          sound = audio.loadSound("assets/audio/1audio.mp3")
+          audio.play(sound, { onComplete = function() isAudioPlaying = false end })
+      end
+
+      buttonPlay:removeEventListener("touch", onTouch)
+      timer.performWithDelay(300, function()
+          buttonPlay:addEventListener("touch", onTouch)
+      end)
+  end
+end
+
 function scene:create( event )
  
   local sceneGroup = self.view
-  -- Code here runs when the scene is first created but has not yet appeared on screen
 
   local backgroundImage = display.newImageRect(sceneGroup, "assets/Capa.png", display.contentWidth, display.contentHeight)
     backgroundImage.x = display.contentCenterX
@@ -31,12 +39,16 @@ function scene:create( event )
     sceneGroup, "assets/seta.png", 64, 64
   )
 
-  btNext.x = display.contentWidth - 60  -- Metade da largura da seta
+  btNext.x = display.contentWidth - 60
   btNext.y = display.contentHeight - 67
   btNext.rotation = 90
 
+  buttonPlay = display.newImageRect(sceneGroup, "assets/audio.png", 75, 75)
+  buttonPlay.x, buttonPlay.y = display.contentWidth - 384, 930
+  buttonPlay:addEventListener("touch", onTouch)
+
   function btNext.handle(event)
-    composer.gotoScene("page7", {effect = "fromRight", time = 1000})
+    composer.gotoScene("page2", {effect = "fromRight", time = 1000})
   end
 
   btNext:addEventListener('tap', btNext.handle)

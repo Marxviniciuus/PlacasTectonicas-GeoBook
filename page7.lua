@@ -19,7 +19,7 @@ local function onTouch(event)
             audio.dispose(sound)
         else
             isAudioPlaying = true
-            sound = audio.loadSound("7audio.mp3")
+            sound = audio.loadSound("assets/audio/7audio.mp3")
             audio.play(sound, { onComplete = function() isAudioPlaying = false end })
         end
 
@@ -30,20 +30,23 @@ local function onTouch(event)
     end
 end
 
+local function moveRedPoint()
+    local minX = display.contentWidth - 580  -- Valor mínimo no eixo X
+    local maxX = display.contentWidth -  165 -- Valor máximo no eixo X
+    local randomX = math.random(minX, maxX)
+
+    if redPoint then  -- Verifica se redPoint não é nulo antes de tentar a transição
+        transition.to(redPoint, { x = randomX, time = 500, transition = easing.outQuad, onComplete = function()
+            isShakeDetected = false  -- Reinicia o shake após a movimentação
+        end })
+    end
+end
+
 local function onShake(event)
     if event.isShake and not isShakeDetected then
         isShakeDetected = true
         predioImage:play()
-    end
-end
-
-
-local function moveRedPoint(event)
-    if event.isShake and not isShakeDetected then
-        local minY = 178  -- Valor mínimo no eixo Y
-        local maxY = display.contentHeight - 200
-        local randomY = math.random(minY, maxY)
-        transition.to(redPoint, { y = randomY, time = 500, transition = easing.outQuad })
+        moveRedPoint()
     end
 end
 
@@ -61,8 +64,8 @@ local sequencesPredio = {
         name = "move",
         start = 1,
         count = 6,
-        time = 0,
-        loopCount = 10,  -- Defina para 1 para reprodução única
+        time = 100,
+        loopCount = 10,
         loopDirection = "forward"
     }
 }
@@ -80,15 +83,15 @@ function scene:create(event)
 
     local btPreview = display.newImageRect(sceneGroup, "assets/seta.png", 64, 64)
     btPreview.x, btPreview.y, btPreview.rotation = display.contentWidth - 710, display.contentHeight - 78, 270
-    btPreview:addEventListener('tap', function() composer.gotoScene("page1", {effect = "fromLeft", time = 1000}) end)
+    btPreview:addEventListener('tap', function() composer.gotoScene("page6", {effect = "fromLeft", time = 1000}) end)
 
     buttonPlay = display.newImageRect(sceneGroup, "assets/audio.png", 75, 75)
-    buttonPlay.x, buttonPlay.y = display.contentWidth - 50, 400
+    buttonPlay.x, buttonPlay.y = display.contentWidth - 384, 930
     buttonPlay:addEventListener("touch", onTouch)
 
-    redPoint = display.newCircle(sceneGroup, display.contentWidth - 590, 930, 15)
+    redPoint = display.newCircle(sceneGroup, display.contentWidth - 580, 840, 15)
     redPoint:setFillColor(1, 0, 0)
-    redPoint:addEventListener("movement",  function(event)
+    redPoint:addEventListener("sprite", function(event)
         if event.phase == "ended" then
             isShakeDetected = false
         end
