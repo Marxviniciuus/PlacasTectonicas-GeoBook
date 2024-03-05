@@ -30,6 +30,11 @@ local function onTouch(event)
     end
 end
 
+local function endAudio()
+    isAudioPlaying = false
+    audio.stop()
+end  
+
 local sheetOptions =
 {
     width = 250, 
@@ -84,11 +89,23 @@ function scene:create(event)
 
     local btNext = display.newImageRect(sceneGroup, "assets/seta.png", 64, 64)
     btNext.x, btNext.y, btNext.rotation = display.contentWidth - 58, display.contentHeight - 79, 90
-    btNext:addEventListener('tap', function() composer.gotoScene("page4", {effect = "fromRight", time = 1000}) end)
+    btNext:addEventListener("touch", function (event)
+        if event.phase == "ended" then
+            endAudio()
+            composer.removeScene("page3")
+            composer.gotoScene("page4", {effect = "fromRight", time = 1000})
+        end
+    end)
 
     local btPreview = display.newImageRect(sceneGroup, "assets/seta.png", 64, 64)
     btPreview.x, btPreview.y, btPreview.rotation = display.contentWidth - 700, display.contentHeight - 78, 270
-    btPreview:addEventListener('tap', function() composer.gotoScene("page2", {effect = "fromLeft", time = 1000}) end)
+    btPreview:addEventListener("touch", function (event)
+        if event.phase == "ended" then
+            endAudio()
+            composer.removeScene("page3")
+            composer.gotoScene("page2", {effect = "fromLeft", time = 1000})
+        end
+    end)
 
     buttonPlay = display.newImageRect(sceneGroup, "assets/audio.png", 75, 75)
     buttonPlay.x, buttonPlay.y = display.contentWidth - 384, 930

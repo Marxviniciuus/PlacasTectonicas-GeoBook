@@ -6,9 +6,9 @@ local isAudioPlaying = false
 local buttonPlay
 local sound
 local vulcanImage
-local touchArea -- Novo: retângulo invisível para detectar o toque
-local isRubbing = false -- Nova: variável para indicar esfregamento
-local touchStartTime = 0  -- Variável para registrar o tempo inicial do toque
+local touchArea
+local isRubbing = false
+local touchStartTime = 0
 local rubCount = 0
 
 local function onTouch(event)
@@ -30,18 +30,21 @@ local function onTouch(event)
     end
 end
 
+local function endAudio()
+    isAudioPlaying = false
+    audio.stop()
+end
+
 local function onVulcanTouch(event)
     if event.phase == "began" then
-        -- Se o dedo começou a tocar na área do vulcão
         touchArea.isFocused = true
-        touchStartTime = system.getTimer()  -- Registra o tempo inicial do toque
+        touchStartTime = system.getTimer()
         isRubbing = false
     elseif (event.phase == "ended" or event.phase == "cancelled") and touchArea.isFocused then
-        -- Se o dedo saiu da área do vulcão
+    
         touchArea.isFocused = false
-        isRubbing = false  -- Reseta a variável ao finalizar o toque
+        isRubbing = false
 
-        -- Verifica se o toque persistiu por mais de 0.5 segundos
         local touchDuration = system.getTimer() - touchStartTime
         if touchDuration > 2000 then
             vulcanImage:setSequence("move")
@@ -49,7 +52,7 @@ local function onVulcanTouch(event)
         end
     end
 
-    return true  -- Indica que o evento foi manipulado
+    return true
 end
 
 local sheetOptions =
@@ -81,11 +84,23 @@ function scene:create(event)
 
     local btNext = display.newImageRect(sceneGroup, "assets/seta.png", 64, 60)
     btNext.x, btNext.y, btNext.rotation = display.contentWidth - 60, display.contentHeight - 78, 90
-    btNext:addEventListener('tap', function() composer.gotoScene("page7", {effect = "fromRight", time = 1000}) end)
+    btNext:addEventListener("touch", function (event)
+        if event.phase == "ended" then
+            endAudio()
+            composer.removeScene("page6")
+            composer.gotoScene("page7", {effect = "fromRight", time = 1000})
+        end
+    end)
 
     local btPreview = display.newImageRect(sceneGroup, "assets/seta.png", 64, 64)
     btPreview.x, btPreview.y, btPreview.rotation = display.contentWidth - 710, display.contentHeight - 78, 270
-    btPreview:addEventListener('tap', function() composer.gotoScene("page5", {effect = "fromLeft", time = 1000}) end)
+    btPreview:addEventListener("touch", function (event)
+        if event.phase == "ended" then
+            endAudio()
+            composer.removeScene("page6")
+            composer.gotoScene("page5", {effect = "fromLeft", time = 1000})
+        end
+    end)
 
     buttonPlay = display.newImageRect(sceneGroup, "assets/audio.png", 75, 75)
     buttonPlay.x, buttonPlay.y = display.contentWidth - 384, 930
@@ -95,9 +110,8 @@ function scene:create(event)
     vulcanImage.x, vulcanImage.y = display.contentCenterX, display.contentCenterY + 100
     sceneGroup:insert(vulcanImage)
 
-    -- Retângulo semi invisível para detectar o toque
     touchArea = display.newRect(sceneGroup, 380, 620, 200, 200)
-    touchArea:setFillColor(1, 0, 0, 0,01)  -- Vermelho semi invisível
+    touchArea:setFillColor(1, 0, 0, 0,01)
     touchArea.isHitTestable = true
     touchArea:addEventListener("touch", onVulcanTouch)
 end

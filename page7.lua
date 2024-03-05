@@ -9,7 +9,7 @@ local redPoint
 local predioImage
 local isShakeDetected = false
 
-local shakeThreshold = 1.5  -- Ajuste conforme necessário
+local shakeThreshold = 1.5
 
 local function onTouch(event)
     if event.phase == "ended" then
@@ -30,14 +30,19 @@ local function onTouch(event)
     end
 end
 
+local function endAudio()
+    isAudioPlaying = false
+    audio.stop()
+end  
+
 local function moveRedPoint()
-    local minX = display.contentWidth - 550  -- Valor mínimo no eixo X
-    local maxX = display.contentWidth -  165 -- Valor máximo no eixo X
+    local minX = display.contentWidth - 550
+    local maxX = display.contentWidth -  165
     local randomX = math.random(minX, maxX)
 
-    if redPoint then  -- Verifica se redPoint não é nulo antes de tentar a transição
+    if redPoint then
         transition.to(redPoint, { x = randomX, time = 500, transition = easing.outQuad, onComplete = function()
-            isShakeDetected = false  -- Reinicia o shake após a movimentação
+            isShakeDetected = false
         end })
     end
 end
@@ -57,7 +62,7 @@ local sheetOptions =
     numFrames = 6  
 }
 
-local sheetPredio = graphics.newImageSheet("assets/predio.png", sheetOptions)  -- Substitua o caminho pela sua spritesheet
+local sheetPredio = graphics.newImageSheet("assets/predio.png", sheetOptions)
 
 local sequencesPredio = {
     {
@@ -79,11 +84,23 @@ function scene:create(event)
 
     local btNext = display.newImageRect(sceneGroup, "assets/seta.png", 64, 64)
     btNext.x, btNext.y, btNext.rotation = display.contentWidth - 60, display.contentHeight - 78, 90
-    btNext:addEventListener('tap', function() composer.gotoScene("page8", {effect = "fromRight", time = 1000}) end)
+    btNext:addEventListener("touch", function (event)
+        if event.phase == "ended" then
+            endAudio()
+            composer.removeScene("page7")
+            composer.gotoScene("page8", {effect = "fromRight", time = 1000})
+        end
+    end)
 
     local btPreview = display.newImageRect(sceneGroup, "assets/seta.png", 64, 64)
     btPreview.x, btPreview.y, btPreview.rotation = display.contentWidth - 710, display.contentHeight - 78, 270
-    btPreview:addEventListener('tap', function() composer.gotoScene("page6", {effect = "fromLeft", time = 1000}) end)
+    btPreview:addEventListener("touch", function (event)
+        if event.phase == "ended" then
+            endAudio()
+            composer.removeScene("page7")
+            composer.gotoScene("page6", {effect = "fromLeft", time = 1000})
+        end
+    end)
 
     buttonPlay = display.newImageRect(sceneGroup, "assets/audio.png", 75, 75)
     buttonPlay.x, buttonPlay.y = display.contentWidth - 384, 930
@@ -99,7 +116,7 @@ function scene:create(event)
 
     predioImage = display.newSprite( sheetPredio, sequencesPredio )
     predioImage.x, predioImage.y = display.contentCenterX, display.contentCenterY + 100
-    sceneGroup:insert(predioImage)  -- Adiciona o sprite ao grupo da cena
+    sceneGroup:insert(predioImage)
     predioImage:addEventListener("sprite", function(event)
         if event.phase == "ended" then
             isShakeDetected = false

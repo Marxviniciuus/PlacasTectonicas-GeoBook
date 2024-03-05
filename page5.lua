@@ -29,6 +29,11 @@ local function onTouch(event)
     end
 end
 
+local function endAudio()
+    isAudioPlaying = false
+    audio.stop()
+end  
+
 local function hideCurrentImage()
     if imagemAtivada1.isVisible then
         display.remove(imagemArrastavel1)
@@ -170,11 +175,23 @@ function scene:create(event)
 
     local btNext = display.newImageRect(sceneGroup, "assets/seta.png", 64, 64)
     btNext.x, btNext.y, btNext.rotation = display.contentWidth - 60, display.contentHeight - 78, 90
-    btNext:addEventListener('tap', function() composer.gotoScene("page6", {effect = "fromRight", time = 1000}) end)
+    btNext:addEventListener("touch", function (event)
+        if event.phase == "ended" then
+            endAudio()
+            composer.removeScene("page5")
+            composer.gotoScene("page6", {effect = "fromRight", time = 1000})
+        end
+    end)
 
     local btPreview = display.newImageRect(sceneGroup, "assets/seta.png", 64, 64)
     btPreview.x, btPreview.y, btPreview.rotation = display.contentWidth - 710, display.contentHeight - 80, 270
-    btPreview:addEventListener('tap', function() composer.gotoScene("page4", {effect = "fromLeft", time = 1000}) end)
+    btPreview:addEventListener("touch", function (event)
+        if event.phase == "ended" then
+            endAudio()
+            composer.removeScene("page5")
+            composer.gotoScene("page4", {effect = "fromLeft", time = 1000})
+        end
+    end)
 
     buttonPlay = display.newImageRect(sceneGroup, "assets/audio.png", 75, 75)
     buttonPlay.x, buttonPlay.y = display.contentWidth - 384, 930
@@ -189,52 +206,25 @@ function scene:show(event)
         resetDraggedImage(imagemArrastavel2)
         resetDraggedImage(imagemArrastavel3)
     elseif phase == "did" then
-        
+
     end
 end
 
 function scene:hide(event)
     if event.phase == "will" then
-        -- Code here runs when the scene is on screen (but is about to go off screen)
+
     elseif event.phase == "did" then
-        -- Code here runs immediately after the scene goes entirely off screen
+       
     end
 end
 
 function scene:destroy(event)
-    local sceneGroup = self.view
-
-
     if sound then
         audio.dispose(sound)
         sound = nil
     end
-
-    -- Remove event listeners
-    imagemArrastavel1:removeEventListener("touch", drag)
-    imagemArrastavel2:removeEventListener("touch", drag)
-    imagemArrastavel3:removeEventListener("touch", drag)
-
-    -- Remove display objects
-    display.remove(imagemArrastavel1)
-    display.remove(imagemArrastavel2)
-    display.remove(imagemArrastavel3)
-    display.remove(imagemAtivada1)
-    display.remove(imagemAtivada2)
-    display.remove(imagemAtivada3)
-    display.remove(redRectangle)
-    display.remove(buttonPlay)
-
-    -- Set variables to nil
-    imagemArrastavel1, imagemArrastavel2, imagemArrastavel3 = nil, nil, nil
-    imagemAtivada1, imagemAtivada2, imagemAtivada3 = nil, nil, nil
-    redRectangle, buttonPlay = nil, nil
-
-    composer.removeScene("scene")
-    sceneGroup = nil
 end
 
--- Create scene is called every time the scene is created or re-created
 scene:addEventListener("create", scene)
 scene:addEventListener("show", scene)
 scene:addEventListener("hide", scene)
