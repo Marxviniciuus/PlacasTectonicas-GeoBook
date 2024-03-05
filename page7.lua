@@ -31,7 +31,7 @@ local function onTouch(event)
 end
 
 local function moveRedPoint()
-    local minX = display.contentWidth - 580  -- Valor mínimo no eixo X
+    local minX = display.contentWidth - 550  -- Valor mínimo no eixo X
     local maxX = display.contentWidth -  165 -- Valor máximo no eixo X
     local randomX = math.random(minX, maxX)
 

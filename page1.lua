@@ -26,6 +26,12 @@ local function onTouch(event)
   end
 end
 
+local function endAudio()
+  isAudioPlaying = false
+  audio.stop()
+end
+
+
 function scene:create( event )
  
   local sceneGroup = self.view
@@ -47,11 +53,14 @@ function scene:create( event )
   buttonPlay.x, buttonPlay.y = display.contentWidth - 384, 930
   buttonPlay:addEventListener("touch", onTouch)
 
-  function btNext.handle(event)
-    composer.gotoScene("page2", {effect = "fromRight", time = 1000})
-  end
-
-  btNext:addEventListener('tap', btNext.handle)
+  local btNext = display.newImageRect(sceneGroup, "assets/seta.png", 64, 60)
+  btNext.x, btNext.y, btNext.rotation = display.contentWidth - 60, display.contentHeight - 67, 90
+  btNext:addEventListener("touch", function (event)
+    if event.phase == "ended" then
+        endAudio()
+        composer.gotoScene("page2", {effect = "fromRight", time = 1000})
+    end
+end)
 
 end
 

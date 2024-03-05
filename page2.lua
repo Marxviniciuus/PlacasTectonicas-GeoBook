@@ -5,6 +5,10 @@ local scene = composer.newScene()
 local isAudioPlaying = false
 local buttonPlay
 local sound
+local continentImage
+local isShakeDetected = false
+
+local shakeThreshold = 1.5  -- Adjust as necessary
 
 local function onTouch(event)
     if event.phase == "ended" then
@@ -25,6 +29,32 @@ local function onTouch(event)
     end
 end
 
+local function onShake(event)
+    if event.isShake and not isShakeDetected then
+        isShakeDetected = true
+        continentImage:play()
+    end
+end
+
+local sheetOptions =
+{
+    width = 166, 
+    height = 250,  
+    numFrames = 6  
+}
+
+local sheetContinent = graphics.newImageSheet("assets/continentes.png", sheetOptions)  -- Replace the path with your spritesheet
+
+local sequencesContinent = {
+    {
+        name = "move",
+        start = 1,
+        count = 6,
+        time = 100,
+        loopCount = 10,
+        loopDirection = "forward"
+    }
+}
 
 function scene:create(event)
     local sceneGroup = self.view
@@ -45,14 +75,26 @@ function scene:create(event)
     buttonPlay.x, buttonPlay.y = display.contentWidth - 384, 930
     buttonPlay:addEventListener("touch", onTouch)  
 
+    continentImage = display.newSprite(sheetContinent, sequencesContinent)
+    continentImage.x, continentImage.y = display.contentCenterX, display.contentCenterY
+    sceneGroup:insert(continentImage)  -- Add the sprite to the scene group
+    continentImage:addEventListener("sprite", function(event)
+        if event.phase == "ended" then
+            isShakeDetected = false
+        end
+    end)
 end
 
 function scene:show(event)
-    
+    if event.phase == "did" then
+        Runtime:addEventListener("accelerometer", onShake)
+    end
 end
 
 function scene:hide(event)
-   
+    if event.phase == "did" then
+        Runtime:removeEventListener("accelerometer", onShake)
+    end
 end
 
 function scene:destroy(event)
